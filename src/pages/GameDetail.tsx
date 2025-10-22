@@ -1,349 +1,484 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useGetGamesQuery } from '../services/gameApi';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import type { Game } from '../services/gameApi'; // Import the Game type
 
 // --- SVG Icons ---
-const ArrowLeftIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+const BackIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
   </svg>
 );
-const ArrowRightIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+const PipIcon = () => (
+  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M19 7h-8v6h8V7zm2-4H3C1.9 3 1 3.9 1 5v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
   </svg>
 );
-// --- NEW Loading Spinner Icon ---
-const LoadingSpinnerIcon = () => (
-  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+const FullscreenIcon = () => (
+  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+  </svg>
+);
+const ExitFullscreenIcon = () => (
+  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+  </svg>
+);
+const CloseIcon = () => (
+   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+  </svg>
+);
+const TagIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
+  </svg>
+);
+const StarIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.31h5.513c.491 0 .702.657.337.95l-4.28 3.11a.563.563 0 00-.182.658l1.583 4.672a.563.563 0 01-.815.63l-4.484-2.354a.563.563 0 00-.52 0L6.32 19.34a.563.563 0 01-.815-.63l1.583-4.672a.563.563 0 00-.182-.658L2.64 9.86c-.365-.293-.154-.95.337-.95h5.513a.563.563 0 00.475-.31l2.125-5.112z" />
+  </svg>
+);
+const OrientationIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75A2.25 2.25 0 0015.75 1.5h-2.25m-3 0V3m3 0V3m-3 18v-1.5m3 1.5v-1.5m-6.75-12h10.5" />
+  </svg>
+);
+const CalendarIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-18 0h18" />
   </svg>
 );
 
+// --- NEW Icons for More Details ---
+const EditIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+  </svg>
+);
 
-const GameHub = () => {
+const DimensionsIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25v8.25a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 16.5V8.25m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v2.25m18 0V6A2.25 2.25 0 0018.75 3.75H5.25A2.25 2.25 0 003 6m0 0v2.25m0 0v8.25m0 0H4.5m-1.5 0H3" />
+  </svg>
+);
+
+const CodeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5-4.5L7.5 12l2.25 2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+  </svg>
+);
+// --- End SVG Icons ---
+
+// Reusable DetailItem component (Unchanged)
+const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) => (
+  <div className="bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg flex items-center gap-4 border border-blue-400/20">
+    <div className="flex-shrink-0 text-blue-400">
+      {icon}
+    </div>
+    <div>
+      <p className="text-sm text-gray-400 jersey-font">{label}</p>
+      <p className="text-white text-base font-semibold jersey-font capitalize">{value}</p>
+    </div>
+  </div>
+);
+
+
+const GameDetail = () => {
+  const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredGames, setFilteredGames] = useState<Game[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showGame, setShowGame] = useState(false);
+  const [showPiP, setShowPiP] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  
+  const gameAreaRef = useRef<HTMLDivElement>(null);
+  const pipRef = useRef<HTMLDivElement>(null);
 
-  // --- UPDATED State for Pagination ---
-  const [currentPage, setCurrentPage] = useState(1);
-  const [allGames, setAllGames] = useState<Game[]>([]); // Master list of all games
-  const [nextUrl, setNextUrl] = useState<string | null>(null); // To know if there's a next page
-
-  // Carousel state
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(false);
-
-  // Fetch games from the API
-  const { 
-    data: gamesData, 
-    error, 
-    isLoading, // True only on the *first* load
-    isFetching // True on first load AND subsequent fetches (e.g., pagination)
-  } = useGetGamesQuery({
-    page: currentPage,
-    pagination: 96
+  const { data: gamesData, error, isLoading } = useGetGamesQuery({ 
+    page: 1, 
+    pagination: 96 
   });
 
-  // --- NEW Effect to append games ---
+  // Event Listeners (Unchanged)
   useEffect(() => {
-    // When new `gamesData` arrives, append it to the `allGames` state
-    if (gamesData?.items) {
-      setAllGames((prevGames) => {
-        // Create a set of existing IDs for fast duplicate checking
-        const existingIds = new Set(prevGames.map(g => g.id));
-        // Filter out any games we already have
-        const newGames = gamesData.items.filter(g => !existingIds.has(g.id));
-        return [...prevGames, ...newGames];
-      });
-      // Store the URL for the next page
-      setNextUrl(gamesData.next_url);
-    }
-  }, [gamesData]); // This runs every time `gamesData` changes
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = 
+        document.fullscreenElement != null ||
+        (document as any).webkitFullscreenElement != null ||
+        (document as any).mozFullScreenElement != null ||
+        (document as any).msFullscreenElement != null;
+      setIsFullscreen(isCurrentlyFullscreen);
+    };
 
-  const handleGameClick = (gameId: string) => {
-    navigate(`/game/${gameId}`);
-  };
+    window.addEventListener('resize', handleResize);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    setSelectedCategory(null);
-
-    if (query.trim() === '') {
-      setFilteredGames([]);
-    } else {
-      // Filter from our master list `allGames`
-      const filtered = allGames.filter(game =>
-        game.title.toLowerCase().includes(query.toLowerCase()) ||
-        game.category.toLowerCase().includes(query.toLowerCase()) ||
-        (game.description && game.description.toLowerCase().includes(query.toLowerCase()))
-      ) || [];
-      setFilteredGames(filtered);
-    }
-  };
-
-  // --- UPDATED Load More Handler ---
-  const handleLoadMore = () => {
-    // Only proceed if we are not already fetching and a next page exists
-    if (!isFetching && nextUrl) {
-      setCurrentPage(prev => prev + 1); // This will trigger the `useGetGamesQuery` to refetch
-    }
-  };
-
-  // --- Carousel Logic ---
-  const checkArrows = () => {
-    const carousel = carouselRef.current;
-    if (!carousel) return;
-    const { scrollLeft, scrollWidth, clientWidth } = carousel;
-    setShowLeftArrow(scrollLeft > 1);
-    setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 1);
-  };
-  useEffect(() => {
-    const carousel = carouselRef.current;
-    if (!carousel) return;
-    carousel.addEventListener('scroll', checkArrows);
-    window.addEventListener('resize', checkArrows);
     return () => {
-      carousel.removeEventListener('scroll', checkArrows);
-      window.removeEventListener('resize', checkArrows);
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
   }, []);
-  useEffect(() => {
-    // Check AFTER loading and when allGames has been updated
-    if (!isLoading && allGames.length > 0) {
-      const timer = setTimeout(() => checkArrows(), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, allGames]); // Depend on allGames now
-  const scrollCarousel = (direction: 'left' | 'right') => {
-    const carousel = carouselRef.current;
-    if (!carousel) return;
-    const scrollAmount = direction === 'left' ? -carousel.clientWidth / 2 : carousel.clientWidth / 2;
-    carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+
+  // Handlers (Unchanged)
+  const handleBackClick = () => {
+    navigate('/');
   };
-  // --- End Carousel Logic ---
 
+  const handleGameClick = (id: string) => {
+    navigate(`/game/${id}`);
+  };
 
-  // Show full-page loader ONLY on the very first load
-  if (isLoading && currentPage === 1) {
+  const handleFullscreen = async () => {
+    const element = gameAreaRef.current;
+    if (!element) return;
+
+    if (!isFullscreen) {
+      try {
+        if (element.requestFullscreen) {
+          await element.requestFullscreen();
+        } else if ((element as any).webkitRequestFullscreen) {
+          await (element as any).webkitRequestFullscreen();
+        } else if ((element as any).mozRequestFullScreen) {
+          await (element as any).mozRequestFullScreen();
+        } else if ((element as any).msRequestFullscreen) {
+          await (element as any).msRequestFullscreen();
+        }
+      } catch (err) {
+        console.error("Fullscreen request failed", err);
+      }
+    } else {
+      try {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
+        } else if ((document as any).mozCancelFullScreen) {
+          await (document as any).mozCancelFullScreen();
+        } else if ((document as any).msExitFullscreen) {
+          await (document as any).msExitFullscreen();
+        }
+      } catch (err) {
+        console.error("Exit fullscreen request failed", err);
+      }
+    }
+  };
+
+  // Render Logic (Unchanged)
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-primary-dark flex items-center justify-center">
-        <div className="text-white text-xl jersey-font">Loading games...</div>
+        <div className="text-white text-xl jersey-font">Loading game...</div>
       </div>
     );
   }
 
-  if (error) {
-    console.error("Error loading games:", error);
+  if (error || !gamesData) {
     return (
       <div className="min-h-screen bg-primary-dark flex items-center justify-center">
-        <div className="text-red-500 text-xl jersey-font">Error loading games. Please try again.</div>
-        <div className="text-gray-400 text-sm mt-2 jersey-font">Check console for details</div>
+        <div className="text-red-500 text-xl jersey-font">Error loading game.</div>
+        <button
+          onClick={handleBackClick}
+          className="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded jersey-font"
+        >
+          Back to Games
+        </button>
       </div>
     );
   }
 
-  // --- UPDATED Render Logic ---
-  // `allGames` is now our master list
-  let displayGames = searchQuery.trim() ? filteredGames : allGames;
+  const game = gamesData.items.find(g => g.id === gameId);
 
-  // Apply category filter if selected and not searching
-  if (selectedCategory && !searchQuery.trim()) {
-    displayGames = allGames.filter(game => game.category === selectedCategory);
+  if (!game) {
+    return (
+      <div className="min-h-screen bg-primary-dark flex items-center justify-center">
+        <div className="text-red-500 text-xl jersey-font">Game not found.</div>
+        <button
+          onClick={handleBackClick}
+          className="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded jersey-font"
+        >
+          Back to Games
+        </button>
+      </div>
+    );
   }
 
-  // Get unique categories from our master list `allGames`
-  const uniqueCategories = Array.from(new Set(allGames.map(game => game.category)));
+  const recommendedGames = gamesData.items.filter(g => g.id !== gameId).slice(0, isMobile ? 4 : 6);
 
-  // Sort categories
-  const categoryOrder = ['action', 'adventure', 'puzzle', 'simulation', 'strategy', 'sports', 'racing', 'arcade', 'casual', 'educational'];
-  const sortedCategories = uniqueCategories.sort((a, b) => {
-    const aIndex = categoryOrder.indexOf(a);
-    const bIndex = categoryOrder.indexOf(b);
-    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-    if (aIndex !== -1) return -1;
-    if (bIndex !== -1) return 1;
-    return a.localeCompare(b);
-  });
-
-  // Game Card component (Unchanged)
-  const GameCard = ({ game, className = '' }: { game: Game, className?: string }) => (
-    <div
-      key={game.id}
-      className={`game-card bg-gray-800/50 backdrop-blur-sm rounded-lg overflow-hidden text-center cursor-pointer hover:bg-gray-700/50 transition-all duration-300 ${className}`}
-      onClick={() => handleGameClick(game.id)}
-    >
-      {game.banner_image ? (
-        <img
-          src={game.banner_image}
-          alt={game.title}
-          className="w-full h-32 object-cover"
-        />
-      ) : (
-        <div className="w-full h-32 bg-gray-700/50 flex items-center justify-center">
-          <span className="text-gray-400 text-sm">No Image</span>
-        </div>
-      )}
-      <div className="p-3 text-left">
-        <h3 className="text-white font-semibold text-sm truncate jersey-font mb-1" title={game.title}>
-          {game.title}
-        </h3>
-        <p className="text-blue-400 text-xs capitalize jersey-font truncate">
-          {game.category}
-        </p>
-      </div>
-    </div>
-  );
+  // Helper function to format dates
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
 
   return (
     <div className="min-h-screen bg-primary-dark">
-      <Header onSearch={handleSearch} />
+      <Header />
+      
+      <div className="container-fluid mx-auto px-4 md:px-8 py-4">
+        <button
+          onClick={handleBackClick}
+          className="text-white hover:text-blue-400 transition-colors duration-200 flex items-center gap-2 jersey-font"
+        >
+          <BackIcon />
+          Back to games
+        </button>
+      </div>
 
-      <main className="container-fluid mx-auto px-8 py-8">
-        
-        {/* Category Carousel */}
-        <section className="mb-8 relative">
-          {showLeftArrow && (
-            <button 
-              onClick={() => scrollCarousel('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/40 text-white p-2 rounded-full hover:bg-black/70 transition-all"
-              aria-label="Scroll left"
-            >
-              <ArrowLeftIcon />
-            </button>
-          )}
-          <div 
-            ref={carouselRef}
-            className="category-carousel hide-scrollbar flex flex-nowrap gap-3 mb-2 pb-4 overflow-x-auto"
-          >
-            <button
-              onClick={() => { setSelectedCategory(null); setSearchQuery(''); setFilteredGames([]); }}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 roboto-font whitespace-nowrap ${
-                selectedCategory === null && !searchQuery.trim()
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
-              }`}
-            >
-              All Categories
-            </button>
-            {sortedCategories.map((category) => (
-              <button
-                key={category}
-                onClick={() => { setSelectedCategory(category); setSearchQuery(''); setFilteredGames([]); }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 roboto-font capitalize whitespace-nowrap ${
-                  selectedCategory === category && !searchQuery.trim()
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
-                }`}
-              >
-                {category}
-                <span className="ml-2 text-xs opacity-75">
-                  ({allGames.filter(g => g.category === category).length}) {/* Count from allGames */}
-                </span>
-              </button>
-            ))}
-          </div>
-          {showRightArrow && (
-            <button 
-              onClick={() => scrollCarousel('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/40 text-white p-2 rounded-full hover:bg-black/70 transition-all"
-              aria-label="Scroll right"
-            >
-              <ArrowRightIcon />
-            </button>
-          )}
-        </section>
-
-        {/* Display All Games or Search Results */}
-        <section className="mb-12">
-          {searchQuery.trim() && (
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2 jersey-title">
-                Search Results for "{searchQuery}"
-                <span className="text-blue-400">&gt;</span>
-              </h2>
-              <span className="text-gray-400 jersey-font">
-                {filteredGames.length} {filteredGames.length === 1 ? 'game' : 'games'} found
-              </span>
-            </div>
-          )}
-           {!searchQuery.trim() && selectedCategory && (
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2 jersey-title capitalize">
-                {selectedCategory} Games
-                <span className="text-blue-400">&gt;</span>
-              </h2>
-               <span className="text-gray-400 jersey-font text-sm bg-gray-800/50 px-3 py-1 rounded-full">
-                {displayGames.length} {displayGames.length === 1 ? 'game' : 'games'}
-              </span>
-            </div>
-          )}
-          {!searchQuery.trim() && !selectedCategory && (
-             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2 jersey-title">
-                All Games
-                <span className="text-blue-400">&gt;</span>
-              </h2>
-              <span className="text-gray-400 jersey-font text-sm bg-gray-800/50 px-3 py-1 rounded-full">
-                {displayGames.length} {displayGames.length === 1 ? 'game' : 'games'}
-              </span>
-            </div>
-          )}
-
-          {displayGames.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-              {displayGames.map((game) => (
-                <GameCard key={game.id} game={game} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-400 text-lg jersey-font">
-                {searchQuery.trim() ? `No games found matching "${searchQuery}"` : (isLoading ? 'Loading...' : 'No games in this category.')}
-              </p>
-              {searchQuery.trim() && (
-                <button
-                  onClick={() => handleSearch('')}
-                  className="mt-4 text-blue-400 hover:text-blue-300 jersey-font"
-                >
-                  Clear search
-                </button>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* --- UPDATED Load More Button --- */}
-        {nextUrl && !searchQuery.trim() && !selectedCategory && ( // Show if nextUrl exists
-          <div className="flex justify-center mt-12">
-            <button
-              onClick={handleLoadMore}
-              disabled={isFetching} // Disable button when fetching
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors jersey-font flex items-center justify-center disabled:bg-blue-800 disabled:cursor-not-allowed"
-            >
-              {isFetching ? (
+      <div className="container-fluid mx-auto px-4 md:px-8 py-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold text-white text-center mb-8 jersey-font">
+            {game.title}
+          </h1>
+          
+            <div className="bg-gray-800/50 backdrop-blur-sm border border-blue-400/20 rounded-2xl p-4 md:p-8 relative overflow-hidden game-container">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-2xl opacity-50"></div>
+            
+            <div ref={gameAreaRef} className="relative z-10 bg-black rounded-lg">
+              {!showGame ? (
                 <>
-                  <LoadingSpinnerIcon />
-                  Loading More...
+                  <div className="text-center mb-6 relative">
+                    {game.banner_image ? (
+                      <img
+                        src={game.banner_image}
+                        alt={game.title}
+                        className="w-full max-w-md mx-auto rounded-lg shadow-2xl"
+                      />
+                    ) : (
+                      <div className="w-full max-w-md mx-auto h-64 bg-gray-700/50 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-400 text-lg jersey-font">No Image</span>
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2 flex flex-col gap-2">
+                      {!isMobile && (
+                        <button
+                          onClick={() => setShowPiP(true)}
+                          className="text-white bg-black/40 hover:text-blue-400 transition-colors p-2 hover:bg-black/60 rounded-full backdrop-blur-sm"
+                          title="Picture-in-Picture"
+                        >
+                          <PipIcon />
+                        </button>
+                      )}
+                      <button
+                        onClick={handleFullscreen}
+                        className="text-white bg-black/40 hover:text-blue-400 transition-colors p-2 hover:bg-black/60 rounded-full backdrop-blur-sm"
+                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                      >
+                        {isFullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="text-center mb-6">
+                    <button
+                      onClick={() => setShowGame(true)}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 md:px-12 py-3 md:py-4 rounded-xl font-bold text-base md:text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105 jersey-font"
+                    >
+                      Play Now
+                    </button>
+                  </div>
+                  
+                  {/* --- Game Description (MOVED) --- */}
+                  {/* This is no longer here, it's in its own section below */}
+
                 </>
               ) : (
-                'Load More Games'
+                <>
+                  <div className="w-full aspect-video rounded-lg overflow-hidden iframe-container bg-black">
+                    <iframe
+                      src={game.url}
+                      className="w-full h-full border-0"
+                      title={game.title}
+                      allowFullScreen
+                      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-between items-center pt-4">
+                    <h3 className="text-white text-base md:text-lg jersey-font truncate pr-2">Playing: {game.title}</h3>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {!isMobile && (
+                        <button
+                          onClick={() => setShowPiP(true)}
+                          className="text-white hover:text-blue-400 transition-colors p-2 hover:bg-gray-700/50 rounded-full"
+                          title="Picture-in-Picture"
+                        >
+                          <PipIcon />
+                        </button>
+                      )}
+                      <button
+                        onClick={handleFullscreen}
+                        className="text-white hover:text-blue-400 transition-colors p-2 hover:bg-gray-700/50 rounded-full"
+                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                      >
+                        {isFullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+                      </button>
+                      <button
+                        onClick={() => setShowGame(false)}
+                        className="text-white bg-red-600 hover:bg-red-700 transition-colors jersey-font px-4 py-2 rounded-full text-sm"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
-            </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* --- UPDATED Game Details & Description Section --- */}
+      <div className="max-w-4xl mx-auto px-4 md:px-8">
+        
+        {/* About this Game (Description) */}
+        {game.description && (
+          <section className="my-12">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 jersey-title">
+              About this Game
+              <span className="text-blue-400">&gt;</span>
+            </h2>
+            <div className="bg-gray-800/50 backdrop-blur-sm border border-blue-400/20 rounded-lg p-6">
+              <p className="text-gray-300 text-base jersey-font leading-relaxed">
+                {game.description}
+              </p>
+            </div>
+          </section>
+        )}
+
+        {/* All Game Details */}
+        <section className="my-12">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 jersey-title">
+            Game Details
+            <span className="text-blue-400">&gt;</span>
+          </h2>
+          {/* Updated grid to be more responsive */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <DetailItem
+              icon={<TagIcon />}
+              label="Category"
+              value={game.category}
+            />
+            <DetailItem
+              icon={<StarIcon />}
+              label="Quality Score"
+              value={`${Math.round(game.quality_score * 100)}%`}
+            />
+            <DetailItem
+              icon={<OrientationIcon />}
+              label="Orientation"
+              value={game.orientation}
+            />
+            <DetailItem
+              icon={<CalendarIcon />}
+              label="Published"
+              value={formatDate(game.date_published)}
+            />
+            <DetailItem
+              icon={<EditIcon />}
+              label="Last Modified"
+              value={formatDate(game.date_modified)}
+            />
+            <DetailItem
+              icon={<DimensionsIcon />}
+              label="Dimensions"
+              value={`${game.width} x ${game.height}`}
+            />
+            <DetailItem
+              icon={<CodeIcon />}
+              label="Namespace"
+              value={game.namespace}
+            />
+          </div>
+        </section>
+      </div>
+      {/* --- End UPDATED Section --- */}
+
+
+      {/* You May Like Section */}
+      <div className="container-fluid mx-auto px-4 md:px-8 py-8">
+        <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 jersey-title">
+          You may like
+          <span className="text-blue-400">&gt;</span>
+        </h2>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {recommendedGames.map((recommendedGame) => (
+            <div
+              key={recommendedGame.id}
+              className="bg-gray-800/50 backdrop-blur-sm border border-blue-400/20 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-700/50 hover:border-blue-400/40 transition-all duration-300 transform hover:scale-105"
+              onClick={() => handleGameClick(recommendedGame.id)}
+            >
+              {recommendedGame.banner_image ? (
+                <img
+                  src={recommendedGame.banner_image}
+                  alt={recommendedGame.title}
+                  className="w-full h-32 object-cover"
+                />
+              ) : (
+                <div className="w-full h-32 bg-gray-700/50 flex items-center justify-center">
+                  <span className="text-gray-400 text-sm jersey-font">No Image</span>
+                </div>
+              )}
+              <div className="p-3">
+                <h3 className="text-white font-semibold text-sm truncate jersey-font" title={recommendedGame.title}>
+                  {recommendedGame.title}
+                </h3>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-blue-400 text-xs capitalize jersey-font">
+                    {recommendedGame.category}
+                  </span>
+                  <span className="text-gray-400 text-xs jersey-font">
+                    {Math.round(recommendedGame.quality_score * 100)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+        <Footer />
+
+        {/* Floating PiP Window (Desktop Only) */}
+        {!isMobile && showPiP && (
+          <div
+            ref={pipRef}
+            className="fixed bottom-4 right-4 w-80 h-60 bg-black border-2 border-blue-400 rounded-lg shadow-2xl z-50 overflow-hidden flex flex-col"
+          >
+            <div className="flex-shrink-0 flex justify-between items-center bg-gray-800 p-2 border-b border-gray-600 cursor-move">
+              <span className="text-white text-sm jersey-font truncate pr-2">
+                PiP: {game.title}
+              </span>
+              <button
+                onClick={() => setShowPiP(false)}
+                className="text-white hover:text-red-400 transition-colors"
+                title="Close PiP"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+            <div className="w-full flex-1 relative">
+              <iframe
+                src={game.url}
+                className="absolute inset-0 w-full h-full border-0"
+                title={`PiP: ${game.title}`}
+                allowFullScreen
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+              />
+            </div>
           </div>
         )}
-      </main>
+      </div>
+    );
+  };
 
-      <Footer />
-    </div>
-  );
-};
-
-export default GameHub;
+  export default GameDetail;
