@@ -137,3 +137,17 @@ body::before {
 .search-input:focus {
   @apply outline-none border-blue-400 ring-2 ring-blue-400;
 }
+
+
+
+
+/* Hide scrollbar for category carousel */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

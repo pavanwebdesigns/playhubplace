@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-// Define the types for the API response based on actual GamePix API
+// Define the types (Unchanged)
 export interface Game {
   id: string;
   title: string;
@@ -47,7 +47,14 @@ export const gameApi = createApi({
           page,
         },
       }),
-      providesTags: ['Game'],
+      // We keep providesTags for the main list
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.items.map(({ id }) => ({ type: 'Game' as const, id })),
+              { type: 'Game', id: 'LIST' },
+            ]
+          : [{ type: 'Game', id: 'LIST' }],
     }),
     getGameById: builder.query<Game, string>({
       query: (id) => ({
@@ -58,8 +65,32 @@ export const gameApi = createApi({
       }),
       providesTags: (_result, _error, id) => [{ type: 'Game', id }],
     }),
+
+    // --- NEW SEARCH ENDPOINT ---
+    searchGames: builder.query<GamesResponse, string>({
+      query: (searchQuery) => ({
+        url: '',
+        params: {
+          sid: 'S7100',
+          q: searchQuery, // Add the 'q' parameter for search
+          pagination: 96, // Show up to 96 search results
+        },
+      }),
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.items.map(({ id }) => ({ type: 'Game' as const, id })),
+              { type: 'Game', id: 'SEARCH_LIST' },
+            ]
+          : [{ type: 'Game', id: 'SEARCH_LIST' }],
+    }),
   }),
 });
 
 // Export hooks for usage in functional components
-export const { useGetGamesQuery, useGetGameByIdQuery } = gameApi;
+// --- EXPORT THE NEW LAZY QUERY HOOK ---
+export const { 
+  useGetGamesQuery, 
+  useGetGameByIdQuery, 
+  useLazySearchGamesQuery // We use the "Lazy" hook
+} = gameApi;
