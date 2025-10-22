@@ -18,7 +18,9 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+    const value = e.target.value;
+    setSearchQuery(value);
+    onSearch?.(value);
   };
 
   return (

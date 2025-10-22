@@ -9,6 +9,7 @@ const GameHub = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredGames, setFilteredGames] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   // Fetch games from the API
   const { data: gamesData, error, isLoading } = useGetGamesQuery({ 
     page: currentPage, 
@@ -21,6 +22,7 @@ const GameHub = () => {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
+    setSelectedCategory(null); // Clear category filter when searching
     
     if (query.trim() === '') {
       setFilteredGames([]);
@@ -56,7 +58,12 @@ const GameHub = () => {
   }
 
   const games = gamesData?.items || [];
-  const displayGames = searchQuery.trim() ? filteredGames : games;
+  let displayGames = searchQuery.trim() ? filteredGames : games;
+  
+  // Apply category filter if selected
+  if (selectedCategory && !searchQuery.trim()) {
+    displayGames = games.filter(game => game.category === selectedCategory);
+  }
 
   // Group games by their actual categories
   const gamesByCategory = displayGames.reduce((acc, game) => {
@@ -68,8 +75,22 @@ const GameHub = () => {
     return acc;
   }, {} as Record<string, any[]>);
 
-  // Get unique categories and sort them
-  const categories = Object.keys(gamesByCategory).sort();
+  // Get unique categories and sort them with better ordering
+  const categoryOrder = ['action', 'adventure', 'puzzle', 'simulation', 'strategy', 'sports', 'racing', 'arcade', 'casual', 'educational'];
+  const categories = Object.keys(gamesByCategory).sort((a, b) => {
+    const aIndex = categoryOrder.indexOf(a);
+    const bIndex = categoryOrder.indexOf(b);
+    
+    // If both categories are in the predefined order, sort by that order
+    if (aIndex !== -1 && bIndex !== -1) {
+      return aIndex - bIndex;
+    }
+    // If only one is in the predefined order, prioritize it
+    if (aIndex !== -1) return -1;
+    if (bIndex !== -1) return 1;
+    // Otherwise, sort alphabetically
+    return a.localeCompare(b);
+  });
 
   const GameCard = ({ game, className = '' }: { game: any, className?: string }) => (
     <div
@@ -101,6 +122,9 @@ const GameHub = () => {
           {title}
           <span className="text-blue-400">&gt;</span>
         </h2>
+        <span className="text-gray-400 jersey-font text-sm bg-gray-800/50 px-3 py-1 rounded-full">
+          {games.length} {games.length === 1 ? 'game' : 'games'}
+        </span>
       </div>
 
       <div className={`grid ${layout === 'double' ? 'grid-cols-5' : 'grid-cols-5'} gap-4`}>
@@ -118,6 +142,40 @@ const GameHub = () => {
       
       {/* Main Content */}
       <main className="container mx-auto px-8 py-8">
+        {/* Category Filter */}
+        {!searchQuery.trim() && (
+          <section className="mb-8">
+            <div className="flex flex-wrap gap-2 mb-6">
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 jersey-font ${
+                  selectedCategory === null
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
+                }`}
+              >
+                All Categories
+              </button>
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 jersey-font ${
+                    selectedCategory === category
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
+                  }`}
+                >
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                  <span className="ml-2 text-xs opacity-75">
+                    ({gamesByCategory[category]?.length || 0})
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Search Results */}
         {searchQuery.trim() && (
           <section className="mb-12">
@@ -154,13 +212,22 @@ const GameHub = () => {
         )}
 
         {/* Games by Category */}
-        {!searchQuery.trim() && categories.map((category) => (
-          <GameSection 
-            key={category} 
-            title={category.charAt(0).toUpperCase() + category.slice(1)} 
-            games={gamesByCategory[category]} 
-          />
-        ))}
+        {!searchQuery.trim() && (
+          selectedCategory ? (
+            <GameSection 
+              title={selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} 
+              games={gamesByCategory[selectedCategory] || []} 
+            />
+          ) : (
+            categories.map((category) => (
+              <GameSection 
+                key={category} 
+                title={category.charAt(0).toUpperCase() + category.slice(1)} 
+                games={gamesByCategory[category]} 
+              />
+            ))
+          )
+        )}
 
         {/* Load More Button */}
         {gamesData?.next_url && (
