@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'; // Import hooks
+import { useState, useRef, useEffect } from 'react'; // Import hooks (removed useCallback)
 import { useNavigate } from 'react-router-dom';
 // Import the new hook and Game type
 import { useGetGamesQuery, useLazySearchGamesQuery, type Game } from '../services/gameApi';
@@ -23,13 +23,13 @@ const GameHub = () => {
   // --- States for Search ---
   const [activeSearchQuery, setActiveSearchQuery] = useState('');
   // This ref is for debouncing. `number` is the correct type for browser `setTimeout`
-  const debounceTimer = useRef<number | null>(null); 
-  
+  const debounceTimer = useRef<number | null>(null);
+
   // --- API Hooks ---
   // 1. Hook for browsing/pagination
-  const { data: gamesData, error, isLoading, isFetching } = useGetGamesQuery({ 
-    page: currentPage, 
-    pagination: 96 
+  const { data: gamesData, error, isLoading, isFetching } = useGetGamesQuery({
+    page: currentPage,
+    pagination: 96
   });
 
   // 2. Hook for searching (we trigger this one manually)
@@ -78,7 +78,7 @@ const GameHub = () => {
     // Set a timer to search 300ms after the user stops typing
     debounceTimer.current = window.setTimeout(() => {
       triggerSearch(query); // This calls the API
-    }, 300); 
+    }, 300);
   };
 
   // --- Updated Load More Handler (Fixes "Load More") ---
@@ -145,7 +145,7 @@ const GameHub = () => {
   }
 
   const inSearchMode = activeSearchQuery.trim() !== '';
-  
+
   // Decide which list to show:
   let displayGames: Game[] = [];
   if (inSearchMode) {
@@ -200,9 +200,9 @@ const GameHub = () => {
   return (
     <div className="min-h-screen bg-primary-dark">
       <Header onSearch={handleSearch} />
-      
+
       <main className="container-fluid mx-auto px-8 py-8">
-        
+
         {/* --- Category Carousel (Only show if NOT in search mode) --- */}
         {!inSearchMode && (
           <section className="mb-8 relative">
@@ -249,7 +249,7 @@ const GameHub = () => {
 
         {/* --- Game Grid Section --- */}
         <section className="mb-12">
-          
+
           {/* Section Titles */}
           {inSearchMode && isSearching && (
              <div className="flex items-center justify-between mb-6">
@@ -341,7 +341,7 @@ const GameHub = () => {
           </div>
         )}
       </main>
-      
+
       <Footer />
     </div>
   );
