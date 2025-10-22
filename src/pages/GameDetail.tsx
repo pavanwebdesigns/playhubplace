@@ -73,7 +73,7 @@ const GameDetail = () => {
       <Header onSearch={() => {}} />
       
       {/* Back Button */}
-      <div className="container mx-auto px-8 py-4">
+      <div className="container-fluid mx-auto px-8 py-4">
         <button
           onClick={handleBackClick}
           className="text-white hover:text-blue-400 transition-colors duration-200 flex items-center gap-2 jersey-font"
@@ -86,7 +86,7 @@ const GameDetail = () => {
       </div>
 
       {/* Main Game Container */}
-      <div className="container mx-auto px-8 py-8">
+      <div className="container-fluid mx-auto px-8 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Game Title */}
           <h1 className="text-3xl font-bold text-white text-center mb-8 jersey-font">
@@ -280,7 +280,7 @@ const GameDetail = () => {
       </div>
 
       {/* You May Like Section */}
-      <div className="container mx-auto px-8 py-8">
+      <div className="container-fluid mx-auto px-8 py-8">
         <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 jersey-title">
           You may like
           <span className="text-blue-400">&gt;</span>

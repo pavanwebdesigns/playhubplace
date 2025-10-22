@@ -11,7 +11,7 @@ interface LogoProps {
 const Logo: React.FC<LogoProps> = ({
   variant = 'header',
   size = 'md',
-  className = '',
+  className = 'header-logo',
 }) => {
   const sizeClasses = {
     sm: 'w-8 h-8',

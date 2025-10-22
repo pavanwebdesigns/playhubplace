@@ -14,7 +14,7 @@ const Footer: React.FC<FooterProps> = ({
         <img 
           src={playFooter} 
           alt="Play Footer Logo" 
-          className="w-96 h-80 object-contain"
+          className="w-1/3 object-contain mt-6 mb-6"
         />
       </div>
       <p className="text-gray-400 text-lg jersey-font">

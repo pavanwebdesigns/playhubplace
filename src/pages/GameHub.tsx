@@ -109,7 +109,7 @@ const GameHub = () => {
           <span className="text-gray-400 text-sm">No Image</span>
         </div>
       )}
-      <h3 className="text-white font-semibold text-sm ms-2 truncate mb-1 jersey-font text-left" title={game.title}>
+      <h3 className="game-title" title={game.title}>
         {game.title}
       </h3>
     </div>
@@ -126,8 +126,8 @@ const GameHub = () => {
           {games.length} {games.length === 1 ? 'game' : 'games'}
         </span>
       </div>
-
-      <div className={`grid ${layout === 'double' ? 'grid-cols-5' : 'grid-cols-5'} gap-4`}>
+{/* {`grid ${layout === 'double' ? 'grid-cols-2' : 'grid-cols-6'} gap-4`} */}
+      <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4'>
         {games.map((game) => (
           <GameCard key={game.id} game={game} />
         ))}
@@ -141,14 +141,14 @@ const GameHub = () => {
       <Header onSearch={handleSearch} />
       
       {/* Main Content */}
-      <main className="container mx-auto px-8 py-8">
+      <main className="container-fluid mx-auto px-8 py-8">
         {/* Category Filter */}
         {!searchQuery.trim() && (
           <section className="mb-8">
             <div className="flex flex-wrap gap-2 mb-6">
               <button
                 onClick={() => setSelectedCategory(null)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 jersey-font ${
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 roboto-font ${
                   selectedCategory === null
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
@@ -160,7 +160,7 @@ const GameHub = () => {
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 jersey-font ${
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 roboto-font ${
                     selectedCategory === category
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'

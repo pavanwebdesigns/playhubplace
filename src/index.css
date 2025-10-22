@@ -1,6 +1,10 @@
 /* Import Jersey 15 font */
 @import url('https://fonts.googleapis.com/css2?family=Jersey+15&display=swap');
 
+/* Import Roboto font */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&family=Space+Grotesk:wght@300..700&display=swap');
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,6 +16,10 @@
   }
 }
 
+.roboto-font{
+  font-family: "Roboto", sans-serif;
+}
+
 /* Grid pattern background */
 body::before {
   content: '';
@@ -20,12 +28,15 @@ body::before {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image:
+  /* background-image:
     linear-gradient(rgba(35, 73, 163, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(35, 73, 163, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
+    linear-gradient(90deg, rgba(35, 73, 163, 0.1) 1px, transparent 1px); */
+  /* background-size: 20px 20px; */
   pointer-events: none;
   z-index: -1;
+  background-image: url(assets/headerbg.png);
+  background-repeat: no-repeat;
+  background-position: 0,0;
 }
 
 /* Custom scrollbar */
@@ -47,16 +58,40 @@ body::before {
   background: #117FD0;
 }
 
+.header-logo img{
+  width: 140px;
+}
+.header-search input{
+  border-radius: 50px;
+  text-align: left;
+  background-color: #000E30;
+  border: 2px solid #132758;
+  font-size: 23px;
+  width: 480px;
+}
+.header-search input::placeholder{
+  color: #2349A3;
+}
 /* Game card hover effects */
 .game-card {
   transition: all 0.3s ease;
   border: 1px solid rgba(35, 73, 163, 0.2);
+  border: 3px solid #11285E;
+  background-color: #000E30;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.game-title{
+  padding: 0px 10px 10px 20px;
+  text-align: left;
 }
 
 .game-card:hover {
   transform: translateY(-2px);
   border-color: rgba(35, 73, 163, 0.4);
   box-shadow: 0 4px 12px rgba(35, 73, 163, 0.2);
+  background-color: #11285E;
 }
 
 @layer components {
