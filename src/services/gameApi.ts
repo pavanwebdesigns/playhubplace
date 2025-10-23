@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-// Define the types
+// --- DEFINE AND EXPORT THE TYPES ---
 export interface Game {
   id: string;
   title: string;
@@ -29,6 +29,7 @@ export interface GamesResponse {
   modified: string;
   items: Game[];
 }
+// --- END OF TYPES ---
 
 // Create the API slice
 export const gameApi = createApi({
@@ -36,7 +37,7 @@ export const gameApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: 'https://feeds.gamepix.com/v2/json',
   }),
-  tagTypes: ['Game', 'Search'], // Add 'Search'
+  tagTypes: ['Game'],
   endpoints: (builder) => ({
     getGames: builder.query<GamesResponse, { page?: number; pagination?: number }>({
       query: ({ page = 1, pagination = 96 } = {}) => ({
@@ -64,26 +65,11 @@ export const gameApi = createApi({
       }),
       providesTags: (_result, _error, id) => [{ type: 'Game', id }],
     }),
-
-    // --- NEW SEARCH ENDPOINT ---
-    searchGames: builder.query<GamesResponse, string>({
-      query: (searchQuery) => ({
-        url: '',
-        params: {
-          sid: 'S7100',
-          q: searchQuery, // API parameter for search
-          pagination: 96, // Max number of search results
-        },
-      }),
-      providesTags: ['Search'], // Provides a 'Search' tag
-    }),
   }),
 });
 
 // Export hooks for usage in functional components
-// --- EXPORT THE NEW HOOK ---
 export const { 
   useGetGamesQuery, 
   useGetGameByIdQuery, 
-  useLazySearchGamesQuery // Export this
 } = gameApi;
