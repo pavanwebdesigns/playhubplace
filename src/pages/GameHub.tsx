@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGetGamesQuery, useLazySearchGamesQuery, type Game } from '../services/gameApi';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import ScrollToTop from '../components/ui/ScrollToTop';
 
 // --- SVG Icons ---
 const ArrowLeftIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"> <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /> </svg> );
@@ -343,6 +344,8 @@ const GameHub = () => {
       </main>
 
       <Footer />
+
+      <ScrollToTop />
     </div>
   );
 };

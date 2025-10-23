@@ -54,7 +54,8 @@ const Header: React.FC<HeaderProps> = ({
   const activeNavLinkClasses = "text-blue-400"; // Active link style
 
   return (
-    <header className={`py-8 px-8 ${className} relative z-20`}> 
+    // --- THIS IS THE MODIFIED LINE ---
+    <header className={`py-4 px-8 ${className} sticky top-0 z-50 bg-primary-dark/95 backdrop-blur-md shadow-lg`}> 
       <div className="container-fluid mx-auto flex items-center justify-between">
         
         {/* Logo on the left */}
