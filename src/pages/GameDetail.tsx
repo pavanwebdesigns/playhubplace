@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGetGamesQuery } from '../services/gameApi';
+// --- FIX: Remove useGetGamesQuery, add Redux hooks ---
+import { useAppSelector } from '../store/hooks'; // Assuming path is ../../store/
+import type { Game } from '../services/gameApi'; // Keep the type import
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
+import ScrollToTop from '../components/ui/ScrollToTop'; // Import ScrollToTop
 
-// --- SVG Icons ---
+// --- SVG Icons (Unchanged) ---
 const BackIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -51,20 +54,16 @@ const CalendarIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-18 0h18" />
   </svg>
 );
-
-// --- NEW Icons for More Details ---
 const EditIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
     <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
   </svg>
 );
-
 const DimensionsIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
     <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25v8.25a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 16.5V8.25m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v2.25m18 0V6A2.25 2.25 0 0018.75 3.75H5.25A2.25 2.25 0 003 6m0 0v2.25m0 0v8.25m0 0H4.5m-1.5 0H3" />
   </svg>
 );
-
 const CodeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
     <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5-4.5L7.5 12l2.25 2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
@@ -74,6 +73,7 @@ const CodeIcon = () => (
 
 // Reusable DetailItem component (Unchanged)
 const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) => (
+  // ... DetailItem JSX ...
   <div className="bg-gray-800/50 backdrop-blur-sm p-4 rounded-lg flex items-center gap-4 border border-blue-400/20">
     <div className="flex-shrink-0 text-blue-400">
       {icon}
@@ -89,26 +89,28 @@ const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: stri
 const GameDetail = () => {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
+
+  // --- FIX: Get games list from Redux store ---
+  const { allGames, hasLoadedAll } = useAppSelector((state) => state.gameList);
+  // --- END FIX ---
+
+  // Local UI state
   const [showGame, setShowGame] = useState(false);
   const [showPiP, setShowPiP] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  
+
   const gameAreaRef = useRef<HTMLDivElement>(null);
-  const pipRef = useRef<HTMLDivElement>(null);
+  const pipRef = useRef<HTMLDivElement>(null); // For PiP dragging, if needed later
 
-  const { data: gamesData, error, isLoading } = useGetGamesQuery({ 
-    page: 1, 
-    pagination: 96 
-  });
-
-  // Event Listeners (Unchanged)
+  // Event Listeners for resize and fullscreen (Unchanged)
   useEffect(() => {
+    // ... (fullscreen and resize listeners) ...
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
     const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = 
+      const isCurrentlyFullscreen =
         document.fullscreenElement != null ||
         (document as any).webkitFullscreenElement != null ||
         (document as any).mozFullScreenElement != null ||
@@ -133,14 +135,17 @@ const GameDetail = () => {
 
   // Handlers (Unchanged)
   const handleBackClick = () => {
-    navigate('/');
+    navigate(-1); // Go back to the previous page (GameHub)
   };
 
   const handleGameClick = (id: string) => {
+    // Navigate to the new game, reset showGame state
+    setShowGame(false);
     navigate(`/game/${id}`);
   };
 
   const handleFullscreen = async () => {
+    // ... (fullscreen logic unchanged) ...
     const element = gameAreaRef.current;
     if (!element) return;
 
@@ -175,35 +180,30 @@ const GameDetail = () => {
     }
   };
 
-  // Render Logic (Unchanged)
-  if (isLoading) {
+  // --- RENDER LOGIC ---
+
+  // --- FIX: Find the game in the Redux `allGames` list ---
+  const game = allGames.find(g => g.id === gameId);
+
+  // --- FIX: Loading state - wait until Redux has games ---
+  // We assume GameHub is handling the initial load loop.
+  // This page just needs *some* games to exist before searching.
+  if (allGames.length === 0 && !hasLoadedAll) {
     return (
       <div className="min-h-screen bg-primary-dark flex items-center justify-center">
-        <div className="text-white text-xl jersey-font">Loading game...</div>
+        <div className="text-white text-xl jersey-font">Loading game data...</div>
       </div>
     );
   }
 
-  if (error || !gamesData) {
-    return (
-      <div className="min-h-screen bg-primary-dark flex items-center justify-center">
-        <div className="text-red-500 text-xl jersey-font">Error loading game.</div>
-        <button
-          onClick={handleBackClick}
-          className="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded jersey-font"
-        >
-          Back to Games
-        </button>
-      </div>
-    );
-  }
-
-  const game = gamesData.items.find(g => g.id === gameId);
-
+  // --- FIX: Error state - Show "Not Found" if game isn't in Redux list ---
   if (!game) {
+    // If we've loaded all games and still can't find it, it's truly not found
+    // If we haven't loaded all, maybe it's still loading
+    const message = hasLoadedAll ? "Game not found." : "Game data is still loading or game not found.";
     return (
       <div className="min-h-screen bg-primary-dark flex items-center justify-center">
-        <div className="text-red-500 text-xl jersey-font">Game not found.</div>
+        <div className="text-red-500 text-xl jersey-font">{message}</div>
         <button
           onClick={handleBackClick}
           className="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded jersey-font"
@@ -213,16 +213,24 @@ const GameDetail = () => {
       </div>
     );
   }
+  // --- END FIX ---
 
-  const recommendedGames = gamesData.items.filter(g => g.id !== gameId).slice(0, isMobile ? 4 : 6);
 
-  // Helper function to format dates
+  // --- Recommended games logic (uses Redux `allGames`) ---
+  const recommendedGames = allGames
+    .filter(g => g.id !== gameId && g.category === game.category) // Recommend from same category
+    .sort(() => 0.5 - Math.random()) // Shuffle
+    .slice(0, isMobile ? 4 : 6);
+
+
+  // Helper function to format dates (Unchanged)
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
 
   return (
     <div className="min-h-screen bg-primary-dark">
+      {/* Header reads global search state from Redux */}
       <Header />
-      
+
       <div className="container-fluid mx-auto px-4 md:px-8 py-4">
         <button
           onClick={handleBackClick}
@@ -238,15 +246,16 @@ const GameDetail = () => {
           <h1 className="text-3xl font-bold text-white text-center mb-8 jersey-font">
             {game.title}
           </h1>
-          
+
             <div className="bg-gray-800/50 backdrop-blur-sm border border-blue-400/20 rounded-2xl p-4 md:p-8 relative overflow-hidden game-container">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-2xl opacity-50"></div>
-            
+
             <div ref={gameAreaRef} className="relative z-10 bg-black rounded-lg">
               {!showGame ? (
                 <>
                   <div className="text-center mb-6 relative">
-                    {game.banner_image ? (
+                    {/* ... (Image/Placeholder JSX unchanged) ... */}
+                     {game.banner_image ? (
                       <img
                         src={game.banner_image}
                         alt={game.title}
@@ -258,7 +267,8 @@ const GameDetail = () => {
                       </div>
                     )}
                     <div className="absolute top-2 right-2 flex flex-col gap-2">
-                      {!isMobile && (
+                       {/* ... (PiP/Fullscreen buttons JSX unchanged) ... */}
+                       {!isMobile && (
                         <button
                           onClick={() => setShowPiP(true)}
                           className="text-white bg-black/40 hover:text-blue-400 transition-colors p-2 hover:bg-black/60 rounded-full backdrop-blur-sm"
@@ -276,23 +286,21 @@ const GameDetail = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="text-center mb-6">
-                    <button
+                     {/* ... (Play Now button JSX unchanged) ... */}
+                     <button
                       onClick={() => setShowGame(true)}
                       className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 md:px-12 py-3 md:py-4 rounded-xl font-bold text-base md:text-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105 jersey-font"
                     >
                       Play Now
                     </button>
                   </div>
-                  
-                  {/* --- Game Description (MOVED) --- */}
-                  {/* This is no longer here, it's in its own section below */}
-
                 </>
               ) : (
                 <>
-                  <div className="w-full aspect-video rounded-lg overflow-hidden iframe-container bg-black">
+                   {/* ... (Iframe and controls JSX unchanged) ... */}
+                   <div className="w-full aspect-video rounded-lg overflow-hidden iframe-container bg-black">
                     <iframe
                       src={game.url}
                       className="w-full h-full border-0"
@@ -301,7 +309,6 @@ const GameDetail = () => {
                       sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
                     />
                   </div>
-                  
                   <div className="flex justify-between items-center pt-4">
                     <h3 className="text-white text-base md:text-lg jersey-font truncate pr-2">Playing: {game.title}</h3>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -336,13 +343,12 @@ const GameDetail = () => {
         </div>
       </div>
 
-      {/* --- UPDATED Game Details & Description Section --- */}
+      {/* --- Game Details & Description Section (Unchanged) --- */}
       <div className="max-w-4xl mx-auto px-4 md:px-8">
-        
-        {/* About this Game (Description) */}
         {game.description && (
           <section className="my-12">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 jersey-title">
+            {/* ... Description JSX ... */}
+             <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 jersey-title">
               About this Game
               <span className="text-blue-400">&gt;</span>
             </h2>
@@ -353,63 +359,32 @@ const GameDetail = () => {
             </div>
           </section>
         )}
-
-        {/* All Game Details */}
         <section className="my-12">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 jersey-title">
+           {/* ... Details Grid JSX ... */}
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 jersey-title">
             Game Details
             <span className="text-blue-400">&gt;</span>
           </h2>
-          {/* Updated grid to be more responsive */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <DetailItem
-              icon={<TagIcon />}
-              label="Category"
-              value={game.category}
-            />
-            <DetailItem
-              icon={<StarIcon />}
-              label="Quality Score"
-              value={`${Math.round(game.quality_score * 100)}%`}
-            />
-            <DetailItem
-              icon={<OrientationIcon />}
-              label="Orientation"
-              value={game.orientation}
-            />
-            <DetailItem
-              icon={<CalendarIcon />}
-              label="Published"
-              value={formatDate(game.date_published)}
-            />
-            <DetailItem
-              icon={<EditIcon />}
-              label="Last Modified"
-              value={formatDate(game.date_modified)}
-            />
-            <DetailItem
-              icon={<DimensionsIcon />}
-              label="Dimensions"
-              value={`${game.width} x ${game.height}`}
-            />
-            <DetailItem
-              icon={<CodeIcon />}
-              label="Namespace"
-              value={game.namespace}
-            />
+            <DetailItem icon={<TagIcon />} label="Category" value={game.category} />
+            <DetailItem icon={<StarIcon />} label="Quality Score" value={`${Math.round(game.quality_score * 100)}%`} />
+            <DetailItem icon={<OrientationIcon />} label="Orientation" value={game.orientation} />
+            <DetailItem icon={<CalendarIcon />} label="Published" value={formatDate(game.date_published)} />
+            <DetailItem icon={<EditIcon />} label="Last Modified" value={formatDate(game.date_modified)} />
+            <DetailItem icon={<DimensionsIcon />} label="Dimensions" value={`${game.width} x ${game.height}`} />
+            <DetailItem icon={<CodeIcon />} label="Namespace" value={game.namespace} />
           </div>
         </section>
       </div>
-      {/* --- End UPDATED Section --- */}
 
-
-      {/* You May Like Section */}
+      {/* You May Like Section (Unchanged, uses Redux `allGames` via `recommendedGames`) */}
       <div className="container-fluid mx-auto px-4 md:px-8 py-8">
-        <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 jersey-title">
+         {/* ... Recommended Games JSX ... */}
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 jersey-title">
           You may like
           <span className="text-blue-400">&gt;</span>
         </h2>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {recommendedGames.map((recommendedGame) => (
             <div
@@ -445,16 +420,18 @@ const GameDetail = () => {
           ))}
         </div>
       </div>
-      
-        <Footer />
 
-        {/* Floating PiP Window (Desktop Only) */}
+        <Footer />
+        <ScrollToTop /> {/* Add ScrollToTop */}
+
+        {/* Floating PiP Window (Unchanged) */}
         {!isMobile && showPiP && (
           <div
             ref={pipRef}
             className="fixed bottom-4 right-4 w-80 h-60 bg-black border-2 border-blue-400 rounded-lg shadow-2xl z-50 overflow-hidden flex flex-col"
           >
-            <div className="flex-shrink-0 flex justify-between items-center bg-gray-800 p-2 border-b border-gray-600 cursor-move">
+             {/* ... PiP JSX ... */}
+             <div className="flex-shrink-0 flex justify-between items-center bg-gray-800 p-2 border-b border-gray-600 cursor-move">
               <span className="text-white text-sm jersey-font truncate pr-2">
                 PiP: {game.title}
               </span>
