@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect } from 'react'; // Import hooks (removed useCallback)
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-// Import the new hook and Game type
-import { useGetGamesQuery, useLazySearchGamesQuery, type Game } from '../services/gameApi';
+import { useGetGamesQuery, type Game } from '../services/gameApi';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
-import ScrollToTop from '../components/ui/ScrollToTop';
+import ScrollToTop from '../components/ui/ScrollToTop'; // <-- IMPORT SCROLLTOTOP
 
 // --- SVG Icons ---
 const ArrowLeftIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"> <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /> </svg> );
@@ -18,76 +17,62 @@ const GameHub = () => {
 
   // --- States for Pagination ---
   const [currentPage, setCurrentPage] = useState(1);
-  const [allGames, setAllGames] = useState<Game[]>([]); // Master list of all loaded games
-  const [nextUrl, setNextUrl] = useState<string | null>(null); // To know if there's a next page
+  const [allGames, setAllGames] = useState<Game[]>([]); 
+  const [nextUrl, setNextUrl] = useState<string | null>(null); 
+  
+  // --- State for local pagination ---
+  const [displayCount, setDisplayCount] = useState(96);
+  const PAGE_SIZE = 96;
 
   // --- States for Search ---
   const [activeSearchQuery, setActiveSearchQuery] = useState('');
-  // This ref is for debouncing. `number` is the correct type for browser `setTimeout`
-  const debounceTimer = useRef<number | null>(null);
 
   // --- API Hooks ---
-  // 1. Hook for browsing/pagination
   const { data: gamesData, error, isLoading, isFetching } = useGetGamesQuery({
     page: currentPage,
     pagination: 96
   });
-
-  // 2. Hook for searching (we trigger this one manually)
-  const [triggerSearch, searchResult] = useLazySearchGamesQuery();
-  const { data: searchData, isFetching: isSearching, error: searchError } = searchResult;
 
   // --- Carousel state ---
   const carouselRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
 
-  // --- Effect for Appending Games (Fixes "Load More") ---
+  // --- Effect 1: Appending Games ---
   useEffect(() => {
-    // When new `gamesData` arrives from pagination
     if (gamesData?.items) {
       setAllGames((prevGames) => {
-        // Add new games, checking for duplicates just in case
         const existingIds = new Set(prevGames.map(g => g.id));
         const newGames = gamesData.items.filter(g => !existingIds.has(g.id));
         return [...prevGames, ...newGames];
       });
-      // Update the nextUrl
       setNextUrl(gamesData.next_url);
     }
-  }, [gamesData]); // This runs every time `gamesData` (for the current page) changes
+  }, [gamesData]); 
+
+  // --- Effect 2: Automatic Page Fetcher ---
+  useEffect(() => {
+    if (!isFetching && nextUrl && !error) {
+      setCurrentPage(prev => prev + 1);
+    }
+  }, [nextUrl, isFetching, error]);
+
 
   const handleGameClick = (gameId: string) => {
     navigate(`/game/${gameId}`);
   };
 
-  // --- Updated Search Handler (Fixes Search) ---
+  // --- Local Search Handler ---
   const handleSearch = (query: string) => {
-    setActiveSearchQuery(query); // Set this so we know we're in "search mode"
-    setSelectedCategory(null); // Clear category filter when searching
-
-    // Clear any pending search
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-
-    if (query.trim() === '') {
-      // If query is empty, just exit search mode.
-      return;
-    }
-
-    // Set a timer to search 300ms after the user stops typing
-    debounceTimer.current = window.setTimeout(() => {
-      triggerSearch(query); // This calls the API
-    }, 300);
+    setActiveSearchQuery(query);
+    setSelectedCategory(null);
+    // Reset display count when starting a new search
+    setDisplayCount(PAGE_SIZE); 
   };
-
-  // --- Updated Load More Handler (Fixes "Load More") ---
+  
+  // --- "Load More" handler (for local state) ---
   const handleLoadMore = () => {
-    // Only load more if we're not already fetching and a next page exists
-    if (!isFetching && nextUrl) {
-      setCurrentPage(prev => prev + 1);
-    }
+    setDisplayCount(prevCount => prevCount + PAGE_SIZE);
   };
 
   // --- Carousel Logic ---
@@ -107,15 +92,13 @@ const GameHub = () => {
       carousel.removeEventListener('scroll', checkArrows);
       window.removeEventListener('resize', checkArrows);
     };
-  }, []); // Runs once
+  }, []); 
   useEffect(() => {
-    // Re-check arrows when allGames list changes
     if (!isLoading && allGames.length > 0) {
-      // Use a timeout to ensure DOM is updated
       const timer = setTimeout(() => checkArrows(), 100);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, allGames]); // Runs when data loads
+  }, [isLoading, allGames]);
   const scrollCarousel = (direction: 'left' | 'right') => {
     const carousel = carouselRef.current;
     if (!carousel) return;
@@ -126,7 +109,7 @@ const GameHub = () => {
 
   // --- Render Logic ---
 
-  // Show a full-page loader only on the very first load
+  // Show full-page loader only on the VERY first page load
   if (isLoading && currentPage === 1) {
     return (
       <div className="min-h-screen bg-primary-dark flex items-center justify-center">
@@ -135,9 +118,9 @@ const GameHub = () => {
     );
   }
 
-  // Show an error if either API call fails
-  if (error || searchError) {
-    console.error("API Error:", error || searchError);
+  // Show fatal error ONLY if the first page fails
+  if (error && allGames.length === 0) {
+    console.error("API Error:", error);
     return (
       <div className="min-h-screen bg-primary-dark flex items-center justify-center">
         <div className="text-red-500 text-xl jersey-font">Error loading games. Please try again.</div>
@@ -147,17 +130,26 @@ const GameHub = () => {
 
   const inSearchMode = activeSearchQuery.trim() !== '';
 
-  // Decide which list to show:
-  let displayGames: Game[] = [];
+  // --- Display Logic ---
+  let displayGames: Game[] = []; // The games to actually render
+  let fullFilteredList: Game[] = []; // The full list for the current filter
+
   if (inSearchMode) {
-    displayGames = searchData?.items || [];
+    // 1. SEARCHING: Filter all 12k games. Show all results.
+    fullFilteredList = allGames.filter(game =>
+      game.title.toLowerCase().includes(activeSearchQuery.toLowerCase())
+    );
+    displayGames = fullFilteredList; // Show all search results, no pagination
   } else if (selectedCategory) {
-    displayGames = allGames.filter(game => game.category === selectedCategory);
+    // 2. CATEGORY: Filter all 12k games, but show a paginated slice
+    fullFilteredList = allGames.filter(game => game.category === selectedCategory);
+    displayGames = fullFilteredList.slice(0, displayCount);
   } else {
-    displayGames = allGames;
+    // 3. NO FILTER: Show a paginated slice of all 12k games
+    fullFilteredList = allGames;
+    displayGames = fullFilteredList.slice(0, displayCount);
   }
 
-  // Get categories from the master list (`allGames`) for the filter buttons
   const allCategories = Array.from(new Set(allGames.map(g => g.category)));
   const categoryOrder = ['action', 'adventure', 'puzzle', 'simulation', 'strategy', 'sports', 'racing', 'arcade', 'casual', 'educational'];
   const sortedCategories = allCategories.sort((a, b) => {
@@ -200,11 +192,12 @@ const GameHub = () => {
 
   return (
     <div className="min-h-screen bg-primary-dark">
+      {/* --- THIS CONNECTS THE SEARCH --- */}
       <Header onSearch={handleSearch} />
 
       <main className="container-fluid mx-auto px-8 py-8">
 
-        {/* --- Category Carousel (Only show if NOT in search mode) --- */}
+        {/* --- Category Carousel --- */}
         {!inSearchMode && (
           <section className="mb-8 relative">
             {showLeftArrow && (
@@ -218,7 +211,7 @@ const GameHub = () => {
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 roboto-font whitespace-nowrap ${
                   selectedCategory === null
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
+                    : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/5m'
                 }`}
               >
                 All Categories
@@ -252,15 +245,7 @@ const GameHub = () => {
         <section className="mb-12">
 
           {/* Section Titles */}
-          {inSearchMode && isSearching && (
-             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2 jersey-title">
-                Searching for "{activeSearchQuery}"
-                <span className="text-blue-400">&gt;</span>
-              </h2>
-             </div>
-          )}
-          {inSearchMode && !isSearching && (
+          {inSearchMode && (
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white flex items-center gap-2 jersey-title">
                 Search Results for "{activeSearchQuery}"
@@ -278,7 +263,7 @@ const GameHub = () => {
                 <span className="text-blue-400">&gt;</span>
               </h2>
                <span className="text-gray-400 jersey-font text-sm bg-gray-800/50 px-3 py-1 rounded-full">
-                {displayGames.length} {displayGames.length === 1 ? 'game' : 'games'}
+                {fullFilteredList.length} {fullFilteredList.length === 1 ? 'game' : 'games'}
               </span>
             </div>
           )}
@@ -288,28 +273,27 @@ const GameHub = () => {
                 All Games
                 <span className="text-blue-400">&gt;</span>
               </h2>
-              <span className="text-gray-400 jersey-font text-sm bg-gray-800/50 px-3 py-1 rounded-full">
-                {displayGames.length} {displayGames.length === 1 ? 'game' : 'games'}
-              </span>
+              {isFetching ? (
+                <span className="text-gray-400 jersey-font text-sm flex items-center">
+                  <LoadingSpinnerIcon />
+                  Loading...
+                </span>
+              ) : (
+                <span className="text-gray-400 jersey-font text-sm bg-gray-800/50 px-3 py-1 rounded-full">
+                  {fullFilteredList.length} {fullFilteredList.length === 1 ? 'game' : 'games'}
+                </span>
+              )}
             </div>
           )}
 
-          {/* --- Actual Grid or Loading/Empty State --- */}
-          {isSearching ? (
-            // 1. Show a spinner while searching
-            <div className="flex justify-center items-center py-20">
-              <LoadingSpinnerIcon />
-              <span className="text-white jersey-font text-xl ml-2">Searching...</span>
-            </div>
-          ) : displayGames.length > 0 ? (
-            // 2. Show the grid of games
+          {/* Grid / Empty State */}
+          {displayGames.length > 0 ? (
             <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4'>
               {displayGames.map((game) => (
                 <GameCard key={game.id} game={game} />
               ))}
             </div>
           ) : (
-            // 3. Show "No results"
             <div className="text-center py-12">
               <p className="text-gray-400 text-lg jersey-font">
                 {inSearchMode
@@ -321,30 +305,23 @@ const GameHub = () => {
           )}
         </section>
 
-
-        {/* --- Load More Button (Only show if NOT in search and a next page exists) --- */}
-        {!inSearchMode && !selectedCategory && nextUrl && ( // Also hide if a category is selected
+        {/* --- "Load More" button --- */}
+        {!inSearchMode && displayCount < fullFilteredList.length && (
           <div className="flex justify-center mt-12">
             <button
               onClick={handleLoadMore}
-              disabled={isFetching} // Disable button while loading next page
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors jersey-font flex items-center justify-center disabled:bg-blue-800 disabled:cursor-not-allowed"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors jersey-font"
             >
-              {isFetching ? (
-                <>
-                  <LoadingSpinnerIcon />
-                  Loading More...
-                </>
-              ) : (
-                'Load More Games'
-              )}
+              Load More Games
             </button>
           </div>
         )}
+
       </main>
 
       <Footer />
-
+      
+      {/* --- THIS ADDS THE SCROLL BUTTON --- */}
       <ScrollToTop />
     </div>
   );
